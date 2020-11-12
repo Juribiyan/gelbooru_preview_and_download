@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gelbooru Preview and Download
 // @namespace    https://sleazyfork.org/
-// @version      1.0
+// @version      1.0.1
 // @description  Quick preview images and download in simple click
 // @author       Ubhelbr
 // @match        https://gelbooru.com/index.php?page=post&s=list*
@@ -19,9 +19,9 @@ function fetchPage(link) {
 		  return response.text()
 		})
 		.then(function(html) {
-		  var parser = new DOMParser();
-		  var doc = parser.parseFromString(html, "text/html")
-		  images = getImage(doc)
+		  let parser = new DOMParser()
+		  , doc = parser.parseFromString(html, "text/html")
+		  , images = getImage(doc)
 		  dataStore[link.id] = {
 		  	name: getTags(doc),
 		  	image: images.full,
@@ -43,7 +43,7 @@ function getTags(doc, options = {
 	limit: 20
 }) {
 	let tagDiv = doc.querySelector('#tag-list div')
-	, list = {}
+	, list = {}, currentCategory
 	;[].find.call(tagDiv.children, el => {
 		if (el.tagName == 'DIV') {
 			currentCategory = el.innerText.toLowerCase()

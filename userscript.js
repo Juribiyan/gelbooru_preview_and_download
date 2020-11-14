@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         Gelbooru Preview and Download
 // @namespace    https://sleazyfork.org/
-// @version      1.0.1
+// @version      2.0.0
 // @description  Quick preview images and download in simple click
 // @author       Ubhelbr
 // @match        https://gelbooru.com/index.php?page=post&s=list*
 // @grant        GM_download
+// @grant        GM_getValue
+// @grant        GM_setValue
 // ==/UserScript==
 
 function fetchPage(link) {
@@ -92,9 +94,14 @@ function getImage(doc) {
 }
 
 function init() {
-	[].forEach.call(document.querySelectorAll('div.thumbnail-preview span'), link => {
-		let a = link.querySelector('a')
+	let downloaded = GM_getValue('GBPAD-downloaded')
+	downloaded = (typeof downloaded !== 'string') ? [] : downloaded.split(',')
+	;[].forEach.call(document.querySelectorAll('div.thumbnail-preview span'), link => {
+		let markAsDownloaded = ~downloaded.indexOf(link.id)
+		, a = link.querySelector('a')
 		, thumb = a.querySelector('img')
+		if (markAsDownloaded)
+			thumb.style.boxShadow = "rgb(43, 175, 0) 0px 0px 0px 2px"
 		a.onclick = ev => {
 			ev.preventDefault()
 			thumb.style.boxShadow = "rgb(32, 173, 255) 0px 0px 0px 2px"
@@ -102,8 +109,14 @@ function init() {
 				GM_download({
 					url: data.image, 
 					name: `${a.id.split('p')[1]} ${data.name}.${data.image.match(/(:?.+)\.(.+?)$/)[2]}`,
-					onload: () => thumb.style.boxShadow = "rgb(43, 175, 0) 0px 0px 0px 2px"
+					onload: () => {
+						thumb.style.boxShadow = "rgb(43, 175, 0) 0px 0px 0px 2px"
+					}
 				})
+				if (!markAsDownloaded) {
+					downloaded.push(link.id)
+					GM_setValue('GBPAD-downloaded', downloaded.join(','))
+				}
 			})
 		}
 		thumb.addEventListener('mouseenter', () => {

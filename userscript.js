@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gelbooru Preview and Download
 // @namespace    https://sleazyfork.org/
-// @version      2.0.0
+// @version      2.1.0
 // @description  Quick preview images and download in simple click
 // @author       Ubhelbr
 // @match        https://gelbooru.com/index.php?page=post&s=list*
@@ -17,9 +17,7 @@ function fetchPage(link) {
 			return
 		}
 		fetch(link)
-		.then(function(response) {
-		  return response.text()
-		})
+		.then(response => response.text())
 		.then(function(html) {
 		  let parser = new DOMParser()
 		  , doc = parser.parseFromString(html, "text/html")
@@ -79,27 +77,25 @@ function getTags(doc, options = {
 }
 
 function getImage(doc) {
-	let s = doc.querySelector('.contain-push > script').innerText
-	, domain = s.match(/'domain':'(.+?)'/)[1]
-	, dir = s.match(/'dir':'(.+?)'/)[1]
-	, img = s.match(/'img':'(.+?)'/)[1]
-	, base_dir = s.match(/'base_dir':'(.+?)'/)[1]
-	, sample_dir = s.match(/'sample_dir':'(.+?)'/)[1]
-	, sample_width = s.match(/'sample_width':'(.+?)'/)[1]
-	let full = `${domain}${base_dir}/${dir}/${img}`
+	let sImg = doc.querySelector('.image-container picture img')
+	, sSrc = sImg.src
+	, sw = sImg.width
+	, scr = [].find.call(doc.querySelectorAll('script:not([src])'), s => s.innerText.match('resizeTransition')).innerText
+	, fw = scr.match(/image\.width\('(\d+)/)[1]
+	, fSrc = (sw == fw) ? sSrc : scr.match(/image\.attr\('src','(.+)'/)[1]
 	return {
-		full: full,
-		sample: (sample_width > 0) ? `${domain}${sample_dir}/${dir}/sample_${img.match(/(.+)\.[^\.]+$/)[1]}.jpg` : full
+		full: fSrc,
+		sample: sSrc
 	}
 }
 
 function init() {
 	let downloaded = GM_getValue('GBPAD-downloaded')
 	downloaded = (typeof downloaded !== 'string') ? [] : downloaded.split(',')
-	;[].forEach.call(document.querySelectorAll('div.thumbnail-preview span'), link => {
-		let markAsDownloaded = ~downloaded.indexOf(link.id)
-		, a = link.querySelector('a')
+	;[].forEach.call(document.querySelectorAll('article.thumbnail-preview'), link => {
+		let a = link.querySelector('a')
 		, thumb = a.querySelector('img')
+		, markAsDownloaded = ~downloaded.indexOf(a.id)
 		if (markAsDownloaded)
 			thumb.style.boxShadow = "rgb(43, 175, 0) 0px 0px 0px 2px"
 		a.onclick = ev => {
@@ -114,7 +110,7 @@ function init() {
 					}
 				})
 				if (!markAsDownloaded) {
-					downloaded.push(link.id)
+					downloaded.push(a.id)
 					GM_setValue('GBPAD-downloaded', downloaded.join(','))
 				}
 			})
